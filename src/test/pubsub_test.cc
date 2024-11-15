@@ -9,51 +9,9 @@
 #include "publisher.h"
 #include "subscriber.h"
 
-void publisher() {
-  zmqpp::context context;
-  zmqpp::socket socket(context, zmqpp::socket_type::pub);
-  socket.bind("tcp://127.0.0.1:5555");
-
-  std::this_thread::sleep_for(std::chrono::seconds(1));  // 防止订阅者先启动
-
-  while (true) {
-    zmqpp::message message;
-    message << "topic1"
-            << "Hello from publisher!";
-    socket.send(message);
-    std::cout << "Published: Hello from publisher!" << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
-}
-
-void subscriber() {
-  zmqpp::context context;
-  zmqpp::socket socket(context, zmqpp::socket_type::sub);
-  socket.connect("tcp://127.0.0.1:5555");
-  socket.subscribe("topic1");
-
-  while (true) {
-    zmqpp::message message;
-    socket.receive(message);
-
-    std::string topic, content;
-    message >> topic >> content;
-    std::cout << "Received: [" << topic << "] " << content << std::endl;
-  }
-}
-
-// TEST(pubsub, tcp_test) {
-//     std::thread pub(publisher);
-//     std::thread sub(subscriber);
-
-//     pub.join();
-//     sub.join();
-
-// }
-
-TEST(pubsub, tcp_test) {
+static void PubSubTest(std::string end) {
+  std::cout << "\n---test with " << end << std::endl;
   zmqpp::context ctx;
-  std::string end = "tcp://127.0.0.1:5555";
 
   std::string g_topic = "topic1";
 
@@ -77,10 +35,51 @@ TEST(pubsub, tcp_test) {
     std::string sendmsg = msg + std::to_string(i);
     pub.Send(g_topic, sendmsg);
     std::cout << "pub send : " << sendmsg << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
   }
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   t.join();
+}
+
+TEST(pubsub, pubsub_test) {
+  PubSubTest("tcp://127.0.0.1:5555");
+  PubSubTest("ipc://demo");
+  PubSubTest("inproc://demo");
+}
+
+static bool PubSubIpcTest(std::string end) {
+  std::cout << "\n--- ipc test with " << end << std::endl;
+
+  std::string g_topic = "topic1";
+  std::string sendmsg = "hello";
+
+  if (fork() != 0) {
+    zmqpp::context ctx;
+    zmq_with_protobuf::Publisher pub(ctx, end);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    pub.Send(g_topic, sendmsg);
+    std::cout << "pub send : " << sendmsg << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    exit(0);
+  } else {
+    zmqpp::context ctx;
+    zmq_with_protobuf::Subscriber sub(ctx, end);
+    sub.Subscribe(g_topic);
+    sub.Set(2000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    std::string topic, msg;
+    sub.Recv(topic, msg);
+    std::cout << "sub recv : " << msg << std::endl;
+    return (msg == sendmsg);
+  }
+}
+
+TEST(pubsub, pubsub_ipc_test) {
+  EXPECT_TRUE(PubSubIpcTest("tcp://127.0.0.1:5555"));
+  EXPECT_TRUE(PubSubIpcTest("ipc://demo"));
+  EXPECT_FALSE(PubSubIpcTest("inproc://demo"));
 }
