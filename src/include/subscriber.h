@@ -22,6 +22,13 @@ class Subscriber {
 
   bool Recv(std::string& topic, std::string& msg);
 
+  template <class T>
+  bool Recv(std::string& topic, T& msg) {
+    std::string msg_str;
+    if (!Recv(topic, msg_str)) return false;
+    return msg.ParseFromString(msg_str);
+  }
+
   void StartAsyncRecv(MsgCallback func);
   void Stop();
 
