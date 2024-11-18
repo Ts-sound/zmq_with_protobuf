@@ -39,7 +39,6 @@ static void ProtoSubTest(std::string end) {
     while (cnt--) {
       std::string topic, s;
       sub.Recv(topic, p);
-
       google::protobuf::util::MessageToJsonString(p, &s,MyJsonOptions());
       s.erase(std::remove(s.begin(), s.end(), '\n'), s.end());
       std::cout << "sub recv : " << topic << " - " << s << std::endl;
@@ -49,9 +48,7 @@ static void ProtoSubTest(std::string end) {
   std::string msg = "hello ";
   for (size_t i = 0; i < 4; i++) {
     person.set_id(i);
-    std::string sendmsg;
-    person.SerializeToString(&sendmsg);
-    pub.Send(g_topic, sendmsg);
+    pub.Send(g_topic,person);
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
   }
 

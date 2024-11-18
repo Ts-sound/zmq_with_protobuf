@@ -20,6 +20,13 @@ class Publisher {
 
   bool Send(const std::string& topic, const std::string& msg);
 
+  template <class T>
+  bool Send(const std::string& topic, const T& msg) {
+    std::string sendmsg;
+    msg.SerializeToString(&sendmsg);
+    Send(topic, sendmsg);
+  }
+
  private:
   zmqpp::context& ctx;
   zmqpp::socket socket;
