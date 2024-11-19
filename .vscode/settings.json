@@ -54,6 +54,8 @@
         "*.ipp": "cpp",
         "bitset": "cpp",
         "fstream": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "forward_list": "cpp",
+        "thread": "cpp"
     }
 }
