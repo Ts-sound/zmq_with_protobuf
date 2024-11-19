@@ -10,7 +10,8 @@
 
 namespace zmq_with_protobuf {
 
-typedef std::function<void(const std::string& topic, const std::string& msg)>
+typedef std::function<void(const std::string& id_or_topic,
+                           const std::string& msg)>
     RecvCallback;
 typedef std::function<void(const std::string& topic, const std::string& msg)>
     ErrCallback;
@@ -22,10 +23,16 @@ class Poller {
     friend class Poller;
 
    public:
-    void SetRecvCallback(RecvCallback* func);
-    virtual void SetErrCallback(ErrCallback* func);
+    std::string GetName() { return name; }
+
+   public:
+    void SetRecvCallback(RecvCallback func);
+    void SetErrCallback(ErrCallback func);
 
     void Send(const std::string& msg);
+
+    // server reply with target id
+    void Send(const std::string& id, const std::string& msg);
 
     Session(Poller& poller, SocketPtr sock, const std::string& name,
             const std::string& topic);
@@ -35,14 +42,15 @@ class Poller {
     SocketPtr sock;
     std::string name, topic;
 
-    std::atomic<RecvCallback*> recv_func = {nullptr};
+    RecvCallback recv_func;
 
-    std::atomic<ErrCallback*> err_func = {nullptr};
+    ErrCallback err_func;
   };
 
   typedef std::shared_ptr<Session> SessionPtr;
   struct PullOutEvent {
     std::string msg;
+    std::string id;
   };
 
  public:
@@ -58,6 +66,11 @@ class Poller {
 
   SessionPtr AddSub(const std::string& name, const std::string& topic,
                     const std::string& endpoint);
+
+  SessionPtr AddServer(const std::string& name, const std::string& topic,
+                       const std::string& endpoint);
+  SessionPtr AddClient(const std::string& name, const std::string& topic,
+                       const std::string& endpoint);
 
   bool AddPullOutEvent(const std::string& session_name, const PullOutEvent& ev);
 
