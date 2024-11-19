@@ -92,7 +92,7 @@ static void PollerServerClientTest(std::string end) {
     for (size_t i = 0; i < 2; i++) {
       for (auto& client : clients) {
         std::string msg = "hello " + std::to_string(i);
-        std::cout << "client send: "
+        std::cout << client->GetName() << " send: "
                   << " " << msg << std::endl;
         client->Send(msg);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
